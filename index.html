@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IP Document Assistant</title>
+<style>
+:root{font-family:Inter,"Segoe UI",sans-serif;color:#172e2a;background:#f6f5ef;font-synthesis:none;--ink:#163e33;--muted:#50645d;--line:#dce3d9;--green:#d9efc4}
+*{box-sizing:border-box}body{margin:0}header{background:#143d32;color:#fff}nav,main{width:min(1160px,calc(100% - 40px));margin:auto}nav{min-height:70px;display:flex;align-items:center;justify-content:space-between;gap:15px}.brand{display:flex;align-items:center;gap:11px;font-size:19px;font-weight:750}.mark{border-radius:10px;background:#d9efc4;color:#143d32;padding:6px 10px}.course{font-size:13px;color:#d4e6d9}
+main{padding:43px 0 36px}h1,h2,h3,p{margin:0}h1{font-size:clamp(35px,5vw,58px);letter-spacing:-.055em;line-height:1.06}.intro{margin:13px 0 28px;color:var(--muted);font-size:17px;line-height:1.5}.scenarios{display:flex;flex-wrap:wrap;gap:9px;margin:10px 0 24px}.caption{font-weight:700;font-size:13px;color:var(--muted)}button,input,select{font:inherit}button{cursor:pointer}.scenario{border:1px solid #bdc9bd;background:white;color:var(--ink);border-radius:9px;padding:9px 13px;font-size:14px;font-weight:650}.scenario[aria-pressed=true]{background:var(--green);border-color:#80a971}.grid{display:grid;grid-template-columns:.87fr 1.13fr;gap:22px;align-items:start}.panel{background:#fff;border:1px solid var(--line);border-radius:17px;padding:25px;box-shadow:0 3px 12px #163e3308}h2{font-size:22px;letter-spacing:-.025em}.fields{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:18px 0 20px}label{display:grid;gap:6px;font-size:13px;font-weight:650}input,select{width:100%;min-width:0;min-height:41px;border:1px solid #bfcac1;border-radius:8px;background:#fafbf8;color:#172e2a;padding:8px 9px}.wide{grid-column:1/-1}.submit{background:var(--ink);color:white;border:0;border-radius:9px;font-weight:700;width:100%;min-height:44px}.submit:hover{background:#205644}button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #5e8c53;outline-offset:3px}.decision{margin:15px 0;background:#e7f3da;border-radius:12px;padding:15px}.decision h3{margin-top:5px;font-size:23px;letter-spacing:-.02em}.risk{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0 15px}.risk>div{background:#f5f7f2;border-radius:10px;padding:12px}.risk strong{display:block;font-size:26px;margin-top:4px;font-variant-numeric:tabular-nums}.trace{border-top:1px solid var(--line);padding:10px 0;color:var(--ink)}summary{cursor:pointer;font-size:14px;font-weight:700;padding:3px 0}.trace p{margin-top:9px;font-size:13px;line-height:1.55;overflow-wrap:anywhere}.meta{margin:22px 0;color:var(--muted);font-size:13px;line-height:1.5}.metrics{overflow:auto}.metrics table{border-collapse:collapse;width:100%;margin-top:10px;font-size:13px}.metrics td,.metrics th{text-align:left;padding:7px;border-bottom:1px solid var(--line);white-space:nowrap}.metrics p{margin:10px 0;font-size:13px}.status{margin:8px 0 0;font-size:13px;color:#8b3526}
+@media(max-width:750px){.grid{grid-template-columns:1fr}main{padding-top:29px}.panel{padding:19px}}@media(max-width:390px){nav,main{width:calc(100% - 24px)}.fields{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><nav><div class="brand"><span class="mark" aria-hidden="true">✓</span> IP Document Assistant</div><span class="course">AI Fundamentals</span></nav></header>
+<main>
+<h1>Check an accounting document</h1>
+<p class="intro">Estimate the risk of an accounting error and see how to route the document.</p>
+<p class="caption">Demo scenarios</p>
+<div class="scenarios" id="scenarios"></div>
+<div class="grid">
+<section class="panel">
+<h2>Document details</h2>
+<form id="document">
+<div class="fields">
+<label>Document type<select name="doc_type"><option value="Receipt">Receipt</option><option value="ESF">ESF</option><option value="AVR">AVR</option><option value="Waybill">Waybill</option></select></label>
+<label>Amount, KZT<input name="amount_kzt" type="number" min="15000" max="2500000" step="1" required></label>
+<label>BIN / IIN<select name="bin_iin_valid"><option value="1">Valid</option><option value="0">Missing or invalid</option></select></label>
+<label>Days from AVR to ESF<input name="esf_delay_days" type="number" min="0" step="1" required></label>
+<label>Supplier registered for VAT<select name="vat_payer"><option value="0">No</option><option value="1">Yes</option></select></label>
+<label>KGD risk flag<select name="kgd_risk_flag"><option value="">Unknown</option><option value="0">No flag</option><option value="1">Flagged</option></select></label>
+<label class="wide">Bank statement comparison<select name="bank_statement_mismatch"><option value="">Unavailable</option><option value="0">Amount matches</option><option value="1">Amount mismatch</option></select></label>
+</div>
+<button class="submit" type="submit">Check document</button>
+<p class="status" id="status" role="alert"></p>
+</form>
+</section>
+<section class="panel">
+<h2>Check result</h2>
+<div aria-live="polite">
+<div class="decision"><p class="caption">Recommended action</p><h3 id="action"></h3></div>
+<div class="risk"><div><span class="caption">Model risk</span><strong id="prior"></strong></div><div><span class="caption">Updated risk</span><strong id="posterior"></strong></div></div>
+</div>
+<div id="trace"></div>
+</section>
+</div>
+<p class="meta">Course simulation using 60 synthetic documents. Enter KGD and bank signals manually. Probabilities and costs are illustrative.</p>
+<details class="panel metrics"><summary>Model comparison on the test set</summary><div id="metrics"></div></details>
+</main>
+<script>
+const MODEL = {"categories": ["AVR", "ESF", "Receipt", "Waybill"], "mean": [730627.7777777778, 0.8888888888888888, 6.333333333333333, 0.6], "scale": [530146.3200073013, 0.3142696805273545, 7.757433710820725, 0.48989794855663554], "weights": [[[0.0003550702767554203, -0.4133761424540622, 0.09711146291422396, 0.1844296586310808, 0.16787817126285487, 0.149155867124269, 0.06408504000757063, 0.01749400072289543], [0.002076263181080941, -0.22733317071694648, -0.034074631635631354, 0.14215236926213226, -0.07357666456823266, 0.36131108641154003, 0.09227635224462234, 0.020919098677801996], [-0.000679687579832322, 0.11336296555218765, -0.020994262235053074, 0.0027094184536841964, -0.03615812142093695, -0.03882595096642799, -0.033560073479179116, -0.0033851420999274125], [4.936632408713959e-05, 0.5480469070708126, -0.028951179780071477, -0.34195271202389654, -0.043645114103729434, -0.4231238363451932, -0.13529311619209666, -0.032796292297849666], [0.0010347121161515315, 0.3123972709082308, -0.18110955621847277, 0.383966826824995, -0.2865065138306414, 0.2488607172991769, -0.27276271286073883, 0.019742108191968234], [0.00040852410050036173, -0.6178948153478955, -0.3302163579994773, 0.26620137336495264, -0.511986841886707, 0.46671594375777464, 0.3075538118489262, 0.02427160755567963], [0.0012478220954797237, -0.4801444035452469, 0.4764775544318168, 0.01611319284245945, 0.7664924742512776, -0.4480846432501078, -0.5673747867750463, -0.014318732624234658], [-0.0013799594413479684, -0.522788502556879, 0.10964719913844032, -0.15196731506954078, 0.174975069526239, 0.41842318057564987, 0.5875725283923543, -0.0013714103473946198]], [[7.8426700953918e-05], [1.233100213075495], [0.6296001789360101], [-0.6441513535070689], [1.006584328644044], [-1.0236321572377665], [-0.9296514849124555], [-0.054072431938008245]]], "bias": [[-0.4022459717550262, 0.08057009847017135, 0.29547361395900174, -0.052144886971804395, 0.48251467518628993, 1.2382458565884105, 0.6178912452664698, 0.009446813171879351], [-0.33840781486190724]], "rules": {"schema_version": 1, "currency": "KZT", "assumptions": {"data_source": "Synthetic inbound accounting records for one Kazakhstan sole proprietor. Counterparty flags are simulated.", "vat_payer": "VAT registration status of the document issuer, which can vary across suppliers.", "bin_iin_valid": "Simulated validity of the issuer identifier. 0 represents a missing or invalid identifier.", "esf_delay_days": "Calendar days from AVR to linked ESF for simulated service ESF and AVR rows. Zero means same-day issuance for those rows and not applicable for Waybill and Receipt.", "esf_screening_threshold_days": 15, "esf_screening_rule": "Flag a delay strictly above 15 days for review in this prototype. Actual invoice timing depends on the transaction and applicable rules.", "has_error": "Simulated ground truth. Invalid identifiers and late linked invoices are modeled errors. Some records have unobserved issues such as missing details or incorrect line items. A KGD flag alone does not determine the label.", "calibration": "The prior, likelihoods, transition probabilities and KZT values are illustrative course assumptions. The penalty cost is a scenario estimate."}, "bayesian_inference": {"target": "has_error", "prior": {"0": 0.85, "1": 0.15}, "cpt_index_order": ["has_error", "evidence_value"], "evidence_conditionally_independent_given_target": true, "cpt": {"kgd_risk_flag": {"0": {"0": 0.91, "1": 0.09}, "1": {"0": 0.62, "1": 0.38}}, "bank_statement_mismatch": {"0": {"0": 0.92, "1": 0.08}, "1": {"0": 0.4, "1": 0.6}}}, "bank_statement_mismatch": {"0": "A comparison was performed and the transaction matched.", "1": "A comparison was performed and a discrepancy was found.", "null": "No bank comparison is available. Omit this likelihood from the update."}, "update": "For each target value, multiply its prior by the likelihood of each observed evidence value and normalize across both target values. Use the CSV KGD flag once and supply the bank result separately."}, "mdp": {"state_order": ["clean", "error"], "decision_horizon_steps": 1, "initial_state_belief": "Use [1 - P(has_error=1 | evidence), P(has_error=1 | evidence)] from Bayesian inference.", "transition_index_order": ["current_state", "next_state"], "actions": {"auto_approve": {"transition_probabilities": [[1.0, 0.0], [0.0, 1.0]], "immediate_utility_kzt_by_current_state": [1000, -50000], "residual_error_cost_kzt": 0}, "request_supplier_correction": {"transition_probabilities": [[1.0, 0.0], [0.75, 0.25]], "immediate_utility_kzt_by_current_state": [-2000, -2000], "residual_error_cost_kzt": -18000}, "escalate_to_accountant": {"transition_probabilities": [[1.0, 0.0], [0.97, 0.03]], "immediate_utility_kzt_by_current_state": [-5000, -5000], "residual_error_cost_kzt": -18000}}, "evaluation": "For each action and current state, add immediate utility to the probability of ending in error times the residual error cost. Average over the initial state belief and select the highest expected utility. Auto-approval already includes the error penalty in its immediate utility."}}, "scenarios": [{"doc_type": "Receipt", "amount_kzt": 26500, "bin_iin_valid": 1, "esf_delay_days": 0, "vat_payer": 1, "kgd_risk_flag": 0, "bank_statement_mismatch": 0}, {"doc_type": "ESF", "amount_kzt": 390000, "bin_iin_valid": 1, "esf_delay_days": 18, "vat_payer": 1, "kgd_risk_flag": 0, "bank_statement_mismatch": null}, {"doc_type": "AVR", "amount_kzt": 2350000, "bin_iin_valid": 1, "esf_delay_days": 13, "vat_payer": 0, "kgd_risk_flag": 1, "bank_statement_mismatch": 1}], "tests": [[0.022922982449559214, 0.006901714926367271, "auto_approve"], [0.5430655664820343, 0.4474361937674746, "request_supplier_correction"], [0.11866725732463897, 0.8100219459294922, "escalate_to_accountant"]]};
+</script>
+<script>
+"use strict";
+const fields = ["amount_kzt", "bin_iin_valid", "esf_delay_days", "vat_payer"];
+const actions = {
+  auto_approve: "Auto-Approve",
+  request_supplier_correction: "Request Supplier Correction",
+  escalate_to_accountant: "Escalate to Accountant",
+};
+const pct = value => value.toLocaleString("en-GB", {style:"percent", maximumFractionDigits:2});
+const money = value => value.toLocaleString("en-GB", {maximumFractionDigits:2}) + " ₸";
+
+function calculate(doc) {
+  const numeric = fields.map((key,i) => (doc[key] - MODEL.mean[i]) / MODEL.scale[i]);
+  let layer = MODEL.categories.map(type => Number(type === doc.doc_type)).concat(numeric);
+  MODEL.weights.forEach((weights,i) => {
+    layer = MODEL.bias[i].map((bias,j) => {
+      const value = layer.reduce((sum,x,k) => sum + x * weights[k][j], bias);
+      return i === MODEL.weights.length - 1 ? 1 / (1 + Math.exp(-value)) : Math.max(0,value);
+    });
+  });
+  const prior = layer[0];
+  const evidence = Object.entries(MODEL.rules.bayesian_inference.cpt).flatMap(([key,table]) =>
+    doc[key] == null ? [] : [{key, value:doc[key], clean:table[0][doc[key]], error:table[1][doc[key]]}]
+  );
+  const clean = evidence.reduce((p,e) => p * e.clean, 1 - prior);
+  const error = evidence.reduce((p,e) => p * e.error, prior);
+  const posterior = error / (clean + error);
+  const mdp = MODEL.rules.mdp;
+  const errIndex = mdp.state_order.indexOf("error");
+  const scores = Object.entries(mdp.actions).map(([key,a]) => {
+    const values = mdp.state_order.map((state,i) => {
+      const belief = state === "error" ? posterior : 1 - posterior;
+      const reward = a.immediate_utility_kzt_by_current_state[i];
+      const nextError = a.transition_probabilities[i][errIndex];
+      const residual = a.residual_error_cost_kzt;
+      return {belief,reward,nextError,residual};
+    });
+    return {key, values, eu: values.reduce((sum,v) => sum + v.belief * (v.reward + v.nextError * v.residual),0)};
+  });
+  const winner = scores.reduce((best,a) => a.eu > best.eu ? a : best);
+  return {prior,posterior,winner,scores,numeric,evidence,clean,error};
+}
+
+if (typeof document !== "undefined") {
+  const get = id => document.getElementById(id);
+  const form = get("document");
+  const typeLabels = {Receipt:"Receipt",ESF:"ESF",AVR:"AVR",Waybill:"Waybill"};
+  const signalLabels = {kgd_risk_flag:"KGD flag",bank_statement_mismatch:"Bank statement mismatch"};
+  const captions = ["Low-risk receipt","ESF with an 18-day delay","AVR with a KGD flag"];
+  let active = 0;
+  const buttons = captions.map((label,i) => {
+    const button = document.createElement("button");
+    button.className = "scenario";
+    button.type = "button";
+    button.textContent = label;
+    button.addEventListener("click", () => load(i));
+    get("scenarios").append(button);
+    return button;
+  });
+  function updateButtons() {
+    buttons.forEach((button,i) => button.setAttribute("aria-pressed",String(i===active)));
+  }
+  function syncDelay() {
+    const delay = form.elements.esf_delay_days;
+    delay.readOnly = ["Receipt","Waybill"].includes(form.elements.doc_type.value);
+    if (delay.readOnly) delay.value = 0;
+  }
+  function load(i) {
+    active = i;
+    for (const [name,value] of Object.entries(MODEL.scenarios[i])) form.elements[name].value = value ?? "";
+    syncDelay();
+    updateButtons();
+    render();
+  }
+  function trace(title, rows, expanded) {
+    const el = document.createElement("details");
+    el.className = "trace";
+    el.open = expanded;
+    const heading = document.createElement("summary");
+    heading.textContent = title;
+    el.append(heading);
+    const labels = ["Input","Key calculation / steps","Output","Explanation"];
+    rows.forEach((line,i) => {
+      const p = document.createElement("p");
+      const label = document.createElement("strong");
+      label.textContent = labels[i] + ": ";
+      p.append(label, line);
+      el.append(p);
+    });
+    return el;
+  }
+  function render() {
+    if (!form.reportValidity()) return;
+    const doc = Object.fromEntries([...new FormData(form)].map(([k,v]) => [k,k==="doc_type" ? v : v==="" ? null : Number(v)]));
+    const r = calculate(doc);
+    get("status").textContent = "";
+    get("action").textContent = actions[r.winner.key];
+    get("prior").textContent = pct(r.prior);
+    get("posterior").textContent = pct(r.posterior);
+    const visible = [...get("trace").children].map(el => el.open);
+    const docs = `${typeLabels[doc.doc_type]}, ${money(doc.amount_kzt)}, BIN/IIN ${doc.bin_iin_valid ? "valid" : "missing or invalid"}, delay ${doc.esf_delay_days} days, VAT ${doc.vat_payer ? "yes" : "no"}.`;
+    const signals = r.evidence.map(e => `${signalLabels[e.key]} = ${e.value} (P(signal | Clean) = ${e.clean}; P(signal | Error) = ${e.error})`).join(", ");
+    const utilities = r.scores.map(s => `${actions[s.key]}: ${s.values.map(v => `${v.belief.toFixed(3)} × (${v.reward} + ${v.nextError} × ${v.residual})`).join(" + ")} = ${money(s.eu)}`).join(" · ");
+    get("trace").replaceChildren(
+      trace("1. Classification", [docs,`One-hot encode the document type. Standardized numeric features: ${r.numeric.map(x=>x.toFixed(2)).join(", ")}. Then compute the MLPClassifier output.`,pct(r.prior),"The trained neural network estimates error risk from the document features."],visible[0] ?? true),
+      trace("2. Bayesian update", [`Risk ${pct(r.prior)}. ${signals || "No evidence observed."}`,`${r.error.toFixed(5)} ÷ (${r.clean.toFixed(5)} + ${r.error.toFixed(5)}). Missing signals are omitted.`,pct(r.posterior),r.posterior > r.prior ? "The evidence is more likely for an erroneous document, so the risk increased." : r.posterior < r.prior ? "The evidence is more likely for a clean document, so the risk decreased." : "The evidence left the risk unchanged."],visible[1] ?? false),
+      trace("3. Expected utility and routing", [`P(Clean) = ${pct(1-r.posterior)}, P(Error) = ${pct(r.posterior)}.`,utilities,`${actions[r.winner.key]} · ${money(r.winner.eu)}`,"The selected action has the highest expected utility given the updated risk and costs."],visible[2] ?? false)
+    );
+  }
+  form.addEventListener("input", () => {
+    active = -1;
+    syncDelay();
+    updateButtons();
+    get("status").textContent = "Document details changed. Select Check document to update the result.";
+  });
+  form.addEventListener("submit", event => {event.preventDefault(); render();});
+  get("metrics").innerHTML = '<p>The model was selected by F1 in cross-validation on the training set. The test set contains 15 documents.</p><table><thead><tr><th>Model</th><th>CV F1</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>Confusion matrix</th></tr></thead><tbody><tr><td>LogisticRegression</td><td>0.606</td><td>1.000</td><td>1.000</td><td>1.000</td><td>1.000</td><td>[[11, 0], [0, 4]]</td></tr><tr><td>MLPClassifier</td><td>0.673</td><td>0.933</td><td>0.800</td><td>1.000</td><td>0.889</td><td>[[10, 1], [0, 4]]</td></tr></tbody></table>';
+  load(0);
+}
+</script>
+</body>
+</html>
